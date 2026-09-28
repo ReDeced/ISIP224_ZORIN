@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using MyConsoleApp.Enums;
+﻿using MyConsoleApp.Enums;
 using MyConsoleApp.Models;
 using MyConsoleApp.Services;
 using MyConsoleApp.Utils;
@@ -46,7 +45,10 @@ internal class Program
         {
             Console.WriteLine("\n--- ГЛАВНОЕ МЕНЮ ---");
             Console.WriteLine("1. Добавить товар");
-            Console.WriteLine("2. Показать все товары");
+            Console.WriteLine("2. Удалить товар");
+            Console.WriteLine("3. Заказать поставку товара");
+            Console.WriteLine("4. Поиск товаров");
+            Console.WriteLine("5. Показать все товары");
             Console.WriteLine("0. Выход");
 
             string choice = Input.ReadText("Выберите команду: ");
@@ -58,6 +60,18 @@ internal class Program
                     break;
 
                 case "2":
+                    RemoveProduct();
+                    break;
+
+                case "3":
+                    OrderSupply();
+                    break;
+
+                case "4":
+                    SearchProducts();
+                    break;
+
+                case "5":
                     PrintProductTable(Repository.Products);
                     break;
 
@@ -78,7 +92,7 @@ internal class Program
         string name = Input.ReadText("  Название товара: ");
         decimal price = Input.ReadPositiveDecimal("  Цена за штуку: ");
         int quantity = Input.ReadNonNegativeInt("  Количество на складе: ");
-        var category = Input.ReadCategory();
+        Category category = Input.ReadCategory();
 
         try
         {
@@ -90,6 +104,140 @@ internal class Program
         catch (ArgumentException exception)
         {
             Input.ShowError($"Товар не добавлен: {exception.Message}");
+        }
+    }
+
+    private static void RemoveProduct()
+    {
+        Console.WriteLine("\n--- УДАЛЕНИЕ ТОВАРА ---");
+
+        int code = Input.ReadCode();
+        Product? product = Repository.FindByCode(code);
+
+        if (product is null)
+        {
+            Input.ShowError($"Товар с кодом {code} не найден.");
+            return;
+        }
+
+        product.PrintInfo();
+        Console.WriteLine();
+
+        string answer = Input.ReadText("  Удалить этот товар? (д/н): ");
+        if (!answer.StartsWith("д", StringComparison.OrdinalIgnoreCase)
+            && !answer.StartsWith("y", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("  Удаление отменено.");
+            return;
+        }
+
+        Repository.Remove(code);
+        Console.WriteLine($"\n  Товар с кодом {code} удалён.");
+        Console.WriteLine($"  Осталось товаров: {Repository.Count}.");
+    }
+
+    private static void OrderSupply()
+    {
+        Console.WriteLine("\n--- ЗАКАЗ ПОСТАВКИ ТОВАРА ---");
+
+        int code = Input.ReadCode();
+        Product? product = Repository.FindByCode(code);
+
+        if (product is null)
+        {
+            Input.ShowError($"Товар с кодом {code} не найден. Сначала добавьте его командой 1.");
+            return;
+        }
+
+        Console.WriteLine($"\n  Текущий остаток: {product.Name} — {product.Quantity} шт.");
+
+        int amount = Input.ReadPositiveInt("  Сколько штук поставить на склад: ");
+
+        try
+        {
+            product.AddQuantity(amount);
+        }
+        catch (ArgumentOutOfRangeException exception)
+        {
+            Input.ShowError($"Поставка не выполнена: {exception.Message}");
+            return;
+        }
+
+        Console.WriteLine($"\n  Поставка выполнена. Товара на складе: {product.Quantity} шт.");
+        Console.WriteLine($"  Стоимость склада: {Input.FormatNumber(Repository.WarehouseValue)} руб.");
+    }
+
+    private static void SearchProducts()
+    {
+        Console.WriteLine("\n--- ПОИСК ТОВАРОВ ---");
+        Console.WriteLine("1. По коду");
+        Console.WriteLine("2. По названию");
+        Console.WriteLine("3. По категории");
+
+        string choice = Input.ReadText("Выберите способ поиска: ");
+
+        switch (choice)
+        {
+            case "1":
+                SearchByCode();
+                break;
+
+            case "2":
+                SearchByName();
+                break;
+
+            case "3":
+                SearchByCategory();
+                break;
+
+            default:
+                Input.ShowError("Такой способа поиска нет.");
+                break;
+        }
+    }
+
+    private static void SearchByCode()
+    {
+        int code = Input.ReadCode("  Искомый код: ");
+        Product? product = Repository.FindByCode(code);
+
+        if (product is null)
+        {
+            Input.ShowError($"Товар с кодом {code} не найден.");
+            return;
+        }
+
+        Console.WriteLine("\n  Найден 1 товар:");
+        product.PrintInfo();
+    }
+
+    private static void SearchByName()
+    {
+        string name = Input.ReadText("  Название товара (часть названия): ");
+        List<Product> products = Repository.SearchByName(name);
+        PrintSearchResult(products);
+    }
+
+    private static void SearchByCategory()
+    {
+        Category category = Input.ReadCategory();
+        List<Product> products = Repository.GetByCategory(category);
+        PrintSearchResult(products);
+    }
+
+    private static void PrintSearchResult(List<Product> products)
+    {
+        if (products.Count == 0)
+        {
+            Console.WriteLine("\n  Ничего не найдено.");
+            return;
+        }
+
+        Console.WriteLine($"\n  Найдено товаров: {products.Count}");
+        foreach (Product product in products)
+        {
+            product.PrintInfo();
+            Console.WriteLine();
         }
     }
 
