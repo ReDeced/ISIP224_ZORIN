@@ -54,6 +54,7 @@ internal class Program
             Console.WriteLine("7. История продаж");
             Console.WriteLine("8. Отменить последнюю продажу");
             Console.WriteLine("9. Отчёт о продажах");
+            Console.WriteLine("10. Товары, которых нет на складе");
             Console.WriteLine("0. Выход");
 
             string choice = Input.ReadText("Выберите команду: ");
@@ -94,6 +95,10 @@ internal class Program
 
                 case "9":
                     PrintSalesReport();
+                    break;
+
+                case "10":
+                    ShowOutOfStock();
                     break;
 
                 case "0":
@@ -284,6 +289,25 @@ internal class Program
             Console.WriteLine($"  Продажа №{sale.Number} убрана из истории.");
     }
 
+    private static void ShowOutOfStock()
+    {
+        Console.WriteLine("\n--- ТОВАРЫ, КОТОРЫХ НЕТ НА СКЛАДЕ ---");
+
+        List<Product> products = Repository.GetOutOfStock();
+        if (products.Count == 0)
+        {
+            Console.WriteLine("  Все товары в наличии.");
+            return;
+        }
+
+        Console.WriteLine();
+        foreach (Product product in products)
+        {
+            product.PrintInfo();
+            Console.WriteLine();
+        }
+    }
+
     private static void PrintSalesReport()
     {
         Console.WriteLine("\n--- ОТЧЁТ О ПРОДАЖАХ ---");
@@ -332,6 +356,7 @@ internal class Program
         Console.WriteLine("1. По коду");
         Console.WriteLine("2. По названию");
         Console.WriteLine("3. По категории");
+        Console.WriteLine("4. Универсальный поиск (код, название или категория)");
 
         string choice = Input.ReadText("Выберите способ поиска: ");
 
@@ -349,8 +374,12 @@ internal class Program
                 SearchByCategory();
                 break;
 
+            case "4":
+                SearchUniversal();
+                break;
+
             default:
-                Input.ShowError("Такой способа поиска нет.");
+                Input.ShowError("Такой способ поиска не найден. Введите номер из списка.");
                 break;
         }
     }
@@ -381,6 +410,13 @@ internal class Program
     {
         Category category = Input.ReadCategory();
         List<Product> products = Repository.GetByCategory(category);
+        PrintSearchResult(products);
+    }
+
+    private static void SearchUniversal()
+    {
+        string query = Input.ReadText("  Что ищем: ");
+        List<Product> products = Repository.Search(query);
         PrintSearchResult(products);
     }
 
