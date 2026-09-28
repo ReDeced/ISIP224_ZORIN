@@ -8,6 +8,7 @@ namespace MyConsoleApp;
 internal class Program
 {
     private static readonly ProductRepository Repository = new();
+    private static readonly SalesService Sales = new(Repository);
 
     static void Main(string[] args)
     {
@@ -47,8 +48,11 @@ internal class Program
             Console.WriteLine("1. Добавить товар");
             Console.WriteLine("2. Удалить товар");
             Console.WriteLine("3. Заказать поставку товара");
-            Console.WriteLine("4. Поиск товаров");
-            Console.WriteLine("5. Показать все товары");
+            Console.WriteLine("4. Продать товар");
+            Console.WriteLine("5. Поиск товаров");
+            Console.WriteLine("6. Показать все товары");
+            Console.WriteLine("7. История продаж");
+            Console.WriteLine("8. Отменить последнюю продажу");
             Console.WriteLine("0. Выход");
 
             string choice = Input.ReadText("Выберите команду: ");
@@ -68,11 +72,23 @@ internal class Program
                     break;
 
                 case "4":
-                    SearchProducts();
+                    SellProduct();
                     break;
 
                 case "5":
+                    SearchProducts();
+                    break;
+
+                case "6":
                     PrintProductTable(Repository.Products);
+                    break;
+
+                case "7":
+                    ShowSalesHistory();
+                    break;
+
+                case "8":
+                    CancelLastSale();
                     break;
 
                 case "0":
@@ -165,6 +181,102 @@ internal class Program
 
         Console.WriteLine($"\n  Поставка выполнена. Товара на складе: {product.Quantity} шт.");
         Console.WriteLine($"  Стоимость склада: {Input.FormatNumber(Repository.WarehouseValue)} руб.");
+    }
+
+    private static void SellProduct()
+    {
+        Console.WriteLine("\n--- ПРОДАЖА ТОВАРА ---");
+
+        int code = Input.ReadCode();
+        Product? product = Repository.FindByCode(code);
+
+        if (product is null)
+        {
+            Input.ShowError($"Товар с кодом {code} не найден.");
+            return;
+        }
+
+        Console.WriteLine();
+        product.PrintInfo();
+        Console.WriteLine();
+
+        if (!product.InStock)
+        {
+            Input.ShowError($"Товара «{product.Name}» нет на складе. Сначала закажите поставку (команда 3).");
+            return;
+        }
+
+        int amount = Input.ReadPositiveInt($"  Сколько штук продать (доступно {product.Quantity}): ");
+        SellStatus status = Sales.Sell(code, amount, out Sale? sale, out string message);
+
+        if (status != SellStatus.Ok || sale is null)
+        {
+            Input.ShowError($"Продажа не оформлена. {message}");
+            return;
+        }
+
+        Console.WriteLine();
+        sale.PrintInfo();
+        Console.WriteLine($"\n  {message}");
+    }
+
+    private static void ShowSalesHistory()
+    {
+        Console.WriteLine("\n--- ИСТОРИЯ ПРОДАЖ ---");
+
+        List<Sale> sales = Sales.GetHistory();
+
+        if (sales.Count == 0)
+        {
+            Console.WriteLine("  Продаж пока не было.");
+            return;
+        }
+
+        for (int i = sales.Count - 1; i >= 0; i--)
+        {
+            Sale sale = sales[i];
+            string total = Input.FormatNumber(sale.Total);
+            string price = Input.FormatNumber(sale.Price);
+
+            Console.WriteLine($"  Продажа №{sale.Number,-4} {sale.Date:dd.MM.yyyy HH:mm} | код {sale.ProductCode,-4} " +
+                              $"| {sale.ProductName,-24} | {sale.Quantity} шт. по {price,9} руб. | {total,10} руб.");
+        }
+
+        Console.WriteLine($"\n  Всего продаж: {sales.Count}, выручка: {Input.FormatNumber(Sales.GetTotalRevenue())} руб.");
+    }
+
+    private static void CancelLastSale()
+    {
+        Console.WriteLine("\n--- ОТМЕНА ПОСЛЕДНЕЙ ПРОДАЖИ ---");
+
+        Sale? lastSale = Sales.GetLastSale();
+        if (lastSale is null)
+        {
+            Input.ShowError("История продаж пуста, отменять нечего.");
+            return;
+        }
+
+        Console.WriteLine();
+        lastSale.PrintInfo();
+        Console.WriteLine();
+
+        string answer = Input.ReadText("  Отменить эту продажу? (д/н): ");
+        if (!answer.StartsWith("д", StringComparison.OrdinalIgnoreCase)
+            && !answer.StartsWith("y", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("  Отмена отменена, продажа остаётся в истории.");
+            return;
+        }
+
+        CancelStatus status = Sales.CancelLastSale(out Sale? sale, out string message);
+
+        if (status == CancelStatus.Ok)
+            Console.WriteLine($"\n  {message}");
+        else
+            Input.ShowError(message);
+
+        if (status == CancelStatus.ProductNotFound && sale is not null)
+            Console.WriteLine($"  Продажа №{sale.Number} убрана из истории.");
     }
 
     private static void SearchProducts()
