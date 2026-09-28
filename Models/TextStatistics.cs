@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -69,6 +70,43 @@ namespace ISIP224_ZORIN.Models
             VowelCount = vowelCount;
             ConsonantCount = consonantCount;
             LetterFrequency = frequency;
+        }
+
+        public void PrintResults()
+        {
+            Console.WriteLine($"Текст №{Number}: {GetPreview(60)}");
+            Console.WriteLine($"  Количество символов: {Symbols}");
+            Console.WriteLine($"  Количество слов: {WordCount}");
+            Console.WriteLine($"  Самое длинное слово: {LongestWord}");
+            Console.WriteLine($"  Самое короткое слово: {ShortestWord}");
+            Console.WriteLine($"  Количество предложений: {SentenceCount}");
+            Console.WriteLine($"  Гласных букв: {VowelCount}");
+            Console.WriteLine($"  Согласных букв: {ConsonantCount}");
+        }
+
+        public void PrintLetterFrequency()
+        {
+            if (LetterFrequency.Count == 0)
+            {
+                Console.WriteLine("  Букв в тексте не найдено.");
+                return;
+            }
+
+            int total = 0;
+
+            for (int i = 0; i < LetterFrequency.Count; i++)
+                total += LetterFrequency[i].Count;
+
+            Console.WriteLine($"  Частота встречаемости букв (всего букв: {total}):");
+            Console.WriteLine($"  {"Буква",-8}{"Количество",-14}{"Доля, %",-10}");
+
+            for (int i = 0; i < LetterFrequency.Count; i++)
+            {
+                LetterStat stat = LetterFrequency[i];
+                double percent = (double)stat.Count / total * 100d;
+
+                Console.WriteLine($"  {stat.Letter,-8}{stat.Count,-14}{percent.ToString("0.00"),-10}");
+            }
         }
 
         public string GetPreview(int maxSymbols)

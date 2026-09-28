@@ -21,15 +21,15 @@ namespace ISIP224_ZORIN
                 int sentenceCount = TextAnalyzer.CountSentences(text);
                 TextAnalyzer.AnalyzeLetters(text, out int vowels, out int consonants, out var frequency);
 
+                TextStatistics statistics = new(1, text);
+                statistics.SetWords(wordCount, longest, shortest);
+                statistics.SetSentences(sentenceCount);
+                statistics.SetLetters(vowels, consonants, frequency);
+
                 Console.WriteLine();
                 Console.WriteLine("--- РЕЗУЛЬТАТЫ АНАЛИЗА ---");
-                Console.WriteLine($"Количество символов: {text.Length}");
-                Console.WriteLine($"Количество слов: {wordCount}");
-                Console.WriteLine($"Самое длинное слово: {longest}");
-                Console.WriteLine($"Самое короткое слово: {shortest}");
-                Console.WriteLine($"Количество предложений: {sentenceCount}");
-                Console.WriteLine($"Гласных букв: {vowels}");
-                Console.WriteLine($"Согласных букв: {consonants}");
+                statistics.PrintResults();
+                statistics.PrintLetterFrequency();
             }
             catch (InputClosedException)
             {
