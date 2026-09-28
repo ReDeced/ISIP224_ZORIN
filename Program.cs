@@ -53,6 +53,7 @@ internal class Program
             Console.WriteLine("6. Показать все товары");
             Console.WriteLine("7. История продаж");
             Console.WriteLine("8. Отменить последнюю продажу");
+            Console.WriteLine("9. Отчёт о продажах");
             Console.WriteLine("0. Выход");
 
             string choice = Input.ReadText("Выберите команду: ");
@@ -89,6 +90,10 @@ internal class Program
 
                 case "8":
                     CancelLastSale();
+                    break;
+
+                case "9":
+                    PrintSalesReport();
                     break;
 
                 case "0":
@@ -277,6 +282,48 @@ internal class Program
 
         if (status == CancelStatus.ProductNotFound && sale is not null)
             Console.WriteLine($"  Продажа №{sale.Number} убрана из истории.");
+    }
+
+    private static void PrintSalesReport()
+    {
+        Console.WriteLine("\n--- ОТЧЁТ О ПРОДАЖАХ ---");
+
+        List<Sale> sales = Sales.GetHistory();
+
+        if (sales.Count == 0)
+        {
+            Console.WriteLine("  Продаж пока не было, отчёт пуст.");
+            return;
+        }
+
+        var groups = sales
+            .GroupBy(sale => new { sale.ProductCode, sale.ProductName, sale.Category })
+            .OrderByDescending(group => group.Sum(sale => sale.Total))
+            .ToList();
+
+        Console.WriteLine($"\n  Проданные товары (позиций: {groups.Count}):");
+        Console.WriteLine($"  {"Код",-6}{"Название",-26}{"Продано, шт.",-15}{"Сумма продажи, руб.",-20}");
+
+        int totalQuantity = 0;
+        decimal totalSum = 0m;
+
+        foreach (var group in groups)
+        {
+            int quantity = group.Sum(sale => sale.Quantity);
+            decimal sum = group.Sum(sale => sale.Total);
+
+            totalQuantity += quantity;
+            totalSum += sum;
+
+            Console.WriteLine($"  {group.Key.ProductCode,-6}{Cut(group.Key.ProductName, 25),-26}{quantity,-15}{Input.FormatNumber(sum),-20}");
+        }
+
+        Console.WriteLine($"  {"ИТОГО",-32}{totalQuantity,-15}{Input.FormatNumber(totalSum),-20}");
+
+        Console.WriteLine($"\n  Всего операций продажи: {sales.Count}");
+        Console.WriteLine($"  Общее количество проданных единиц: {totalQuantity} шт.");
+        Console.WriteLine($"  Общая сумма продаж: {Input.FormatNumber(totalSum)} руб.");
+        Console.WriteLine($"  Средний чек: {Input.FormatNumber(totalSum / sales.Count)} руб.");
     }
 
     private static void SearchProducts()
