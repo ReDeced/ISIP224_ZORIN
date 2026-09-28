@@ -81,6 +81,7 @@ namespace ISIP224_ZORIN.Services
         public static int CountSentences(string text)
         {
             int count = 0;
+            bool ended = false;
 
             for (int i = 0; i < text.Length; i++)
             {
@@ -88,8 +89,15 @@ namespace ISIP224_ZORIN.Services
 
                 if (symbol == '.' || symbol == '!' || symbol == '?')
                 {
-                    if (i == text.Length - 1 || !IsLetter(text[i + 1]))
-                        count++;
+                    if (ended)
+                        continue;
+
+                    count++;
+                    ended = true;
+                }
+                else if (IsLetter(symbol))
+                {
+                    ended = false;
                 }
             }
 
