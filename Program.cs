@@ -8,6 +8,7 @@ namespace ISIP224_ZORIN;
 internal class Program
 {
     private static readonly LibraryRepository Library = new();
+    private static readonly ShoppingCart Cart = new();
 
     static void Main(string[] args)
     {
@@ -52,6 +53,10 @@ internal class Program
             Console.WriteLine("6. Книги по авторам");
             Console.WriteLine("7. Показать все книги");
             Console.WriteLine("8. Вставить блок книг");
+            Console.WriteLine("9. Добавить книгу в корзину");
+            Console.WriteLine("10. Показать корзину");
+            Console.WriteLine("11. Убрать книгу из корзины");
+            Console.WriteLine("12. Очистить корзину");
             Console.WriteLine("0. Выход");
 
             string choice = Input.ReadText("Выберите команду: ");
@@ -90,6 +95,22 @@ internal class Program
                     ImportBlock();
                     break;
 
+                case "9":
+                    AddToCart();
+                    break;
+
+                case "10":
+                    ShowCart();
+                    break;
+
+                case "11":
+                    RemoveFromCart();
+                    break;
+
+                case "12":
+                    ClearCart();
+                    break;
+
                 case "0":
                     return;
 
@@ -97,6 +118,28 @@ internal class Program
                     Input.ShowError("Такой команды нет. Введите номер из меню.");
                     break;
             }
+        }
+    }
+
+    private static void AddBook()
+    {
+        Console.WriteLine("\n--- ДОБАВЛЕНИЕ КНИГИ ---");
+
+        string title = Input.ReadText("  Название: ");
+        string author = Input.ReadText("  Автор: ");
+        Genre genre = ReadGenre();
+        int year = Input.ReadYear("  Год издания: ");
+        decimal price = Input.ReadPrice("  Цена: ");
+
+        try
+        {
+            Book book = Library.Add(title, author, genre, year, price);
+            Console.WriteLine($"\n  Книга добавлена. Идентификатор: {book.Id}");
+            book.PrintInfo();
+        }
+        catch (ArgumentException exception)
+        {
+            Input.ShowError($"Книга не добавлена: {exception.Message}");
         }
     }
 
@@ -129,31 +172,9 @@ internal class Program
         Console.WriteLine($"  Всего книг в фонде: {Library.Count}, стоимость: {Input.FormatMoney(Library.TotalValue)} руб.");
     }
 
-    private static void AddBook()
+    private static void AddToCart()
     {
-        Console.WriteLine("\n--- ДОБАВЛЕНИЕ КНИГИ ---");
-
-        string title = Input.ReadText("  Название: ");
-        string author = Input.ReadText("  Автор: ");
-        Genre genre = ReadGenre();
-        int year = Input.ReadYear("  Год издания: ");
-        decimal price = Input.ReadPrice("  Цена: ");
-
-        try
-        {
-            Book book = Library.Add(title, author, genre, year, price);
-            Console.WriteLine($"\n  Книга добавлена. Идентификатор: {book.Id}");
-            book.PrintInfo();
-        }
-        catch (ArgumentException exception)
-        {
-            Input.ShowError($"Книга не добавлена: {exception.Message}");
-        }
-    }
-
-    private static void RemoveBook()
-    {
-        Console.WriteLine("\n--- УДАЛЕНИЕ КНИГИ ---");
+        Console.WriteLine("\n--- ДОБАВЛЕНИЕ КНИГИ В КОРЗИНУ ---");
 
         int id = Input.ReadId();
         Book? book = Library.FindById(id);
@@ -167,38 +188,95 @@ internal class Program
         book.PrintInfo();
         Console.WriteLine();
 
-        if (!Input.ReadYesNo("  Удалить эту книгу? (д/н): "))
+        int quantity = Input.ReadPositiveInt("  Сколько экземпляров взять: ");
+
+        try
         {
-            Console.WriteLine("  Удаление отменено.");
+            CartItem item = Cart.Add(book, quantity);
+            Console.WriteLine($"\n  В корзине: {item.Book.Title} — {item.Quantity} шт.");
+            Console.WriteLine($"  Стоимость корзины: {Input.FormatMoney(Cart.TotalPrice)} руб.");
+        }
+        catch (ArgumentOutOfRangeException exception)
+        {
+            Input.ShowError($"Книга не добавлена в корзину: {exception.Message}");
+        }
+    }
+
+    private static void ShowCart()
+    {
+        Console.WriteLine("\n--- КОРЗИНА ---");
+
+        List<CartItem> items = Cart.GetItems();
+
+        if (items.Count == 0)
+        {
+            Console.WriteLine("  Корзина пуста.");
             return;
         }
 
-        Library.Remove(id);
-        Console.WriteLine($"\n  Книга с идентификатором {id} удалена.");
-        Console.WriteLine($"  Осталось книг: {Library.Count}.");
+        Console.WriteLine($"  {"№",-5}{"Название",-30}{"Цена, руб.",-13}{"Кол-во",-9}{"Сумма, руб.",-14}");
+        Console.WriteLine($"  {"",-5}{"",-30}{"",-13}{"",-9}{"",-14}");
+
+        int position = 1;
+
+        foreach (CartItem item in items)
+        {
+            Console.WriteLine($"  {position,-5}{Cut(item.Book.Title, 29),-30}{Input.FormatMoney(item.Book.Price),-13}" +
+                              $"{item.Quantity,-9}{Input.FormatMoney(item.Total),-14}");
+            position++;
+        }
+
+        Console.WriteLine($"  {"",-5}{"",-30}{"",-13}{"",-9}{"",-14}");
+        Console.WriteLine($"  {"ИТОГО",-49}{Cart.TotalQuantity,-9}{Input.FormatMoney(Cart.TotalPrice),-14}");
+
+        Console.WriteLine($"\n  Позиций в корзине: {Cart.Count}, всего экземпляров: {Cart.TotalQuantity}.");
+        Console.WriteLine($"  Итоговая стоимость корзины: {Input.FormatMoney(Cart.TotalPrice)} руб.");
     }
 
-    private static Genre ReadGenre()
+    private static void RemoveFromCart()
     {
-        while (true)
+        Console.WriteLine("\n--- УДАЛЕНИЕ КНИГИ ИЗ КОРЗИНЫ ---");
+
+        if (Cart.IsEmpty)
         {
-            Console.WriteLine("  Жанры:");
-            foreach (Genre genre in GenreExtensions.All)
-                Console.WriteLine($"    {genre.GetNumberedTitle()}");
-
-            string text = Input.ReadLine("  Выберите жанр (номер или название): ").Trim();
-
-            foreach (Genre genre in GenreExtensions.All)
-            {
-                if (string.Equals(genre.GetTitle(), text, StringComparison.OrdinalIgnoreCase))
-                    return genre;
-            }
-
-            if (int.TryParse(text, out int number) && Enum.IsDefined(typeof(Genre), number))
-                return (Genre)number;
-
-            Input.ShowError("Такого жанра нет. Выберите номер или название из списка.");
+            Input.ShowError("Корзина пуста.");
+            return;
         }
+
+        List<CartItem> items = Cart.GetItems();
+
+        Console.WriteLine($"  {"№",-5}{"Название",-32}{"Кол-во",-9}");
+        int position = 1;
+
+        foreach (CartItem item in items)
+        {
+            Console.WriteLine($"  {position,-5}{Cut(item.Book.Title, 31),-32}{item.Quantity,-9}");
+            position++;
+        }
+
+        int index = Input.ReadInt("Номер позиции в корзине: ", 1, items.Count);
+        CartItem chosen = items[index - 1];
+
+        if (!Cart.Decrease(chosen.Book.Id))
+            Input.ShowError("Не удалось изменить корзину.");
+
+        Console.WriteLine($"\n  Позиция обновлена. Стоимость корзины: {Input.FormatMoney(Cart.TotalPrice)} руб.");
+    }
+
+    private static void ClearCart()
+    {
+        Console.WriteLine("\n--- ОЧИСТКА КОРЗИНЫ ---");
+
+        if (Cart.IsEmpty)
+        {
+            Input.ShowError("Корзина уже пуста.");
+            return;
+        }
+
+        decimal total = Cart.TotalPrice;
+        Cart.Clear();
+
+        Console.WriteLine($"  Корзина очищена. Утраченная сумма: {Input.FormatMoney(total)} руб.");
     }
 
     private static void FindBooks()
@@ -326,6 +404,56 @@ internal class Program
         }
 
         Console.WriteLine($"\n  Всего авторов: {groups.Count}, книг: {totalBooks}.");
+    }
+
+    private static void RemoveBook()
+    {
+        Console.WriteLine("\n--- УДАЛЕНИЕ КНИГИ ---");
+
+        int id = Input.ReadId();
+        Book? book = Library.FindById(id);
+
+        if (book is null)
+        {
+            Input.ShowError($"Книга с идентификатором {id} не найдена.");
+            return;
+        }
+
+        book.PrintInfo();
+        Console.WriteLine();
+
+        if (!Input.ReadYesNo("  Удалить эту книгу? (д/н): "))
+        {
+            Console.WriteLine("  Удаление отменено.");
+            return;
+        }
+
+        Library.Remove(id);
+        Console.WriteLine($"\n  Книга с идентификатором {id} удалена.");
+        Console.WriteLine($"  Осталось книг: {Library.Count}.");
+    }
+
+    private static Genre ReadGenre()
+    {
+        while (true)
+        {
+            Console.WriteLine("  Жанры:");
+            foreach (Genre genre in GenreExtensions.All)
+                Console.WriteLine($"    {genre.GetNumberedTitle()}");
+
+            string text = Input.ReadLine("  Выберите жанр (номер или название): ").Trim();
+
+            foreach (Genre genre in GenreExtensions.All)
+            {
+                if (string.Equals(genre.GetTitle(), text, StringComparison.OrdinalIgnoreCase))
+                    return genre;
+            }
+
+            if (int.TryParse(text, out int number) && Enum.IsDefined(typeof(Genre), number))
+                return (Genre)number;
+
+            Input.ShowError("Такого жанра нет. Выберите номер или название из списка.");
+        }
     }
 
     private static void PrintBookTable(IReadOnlyList<Book> books)

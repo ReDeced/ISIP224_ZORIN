@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using ISIP224_ZORIN.Enums;
 
@@ -23,6 +21,9 @@ public class Book
 
     public static int MaxYear => DateTime.Now.Year + 1;
 
+    public static bool IsValidYear(int year)
+        => year >= MinYear && year <= MaxYear;
+
     public Book(int id, string title, string author, Genre genre, int year, decimal price)
     {
         if (string.IsNullOrWhiteSpace(title))
@@ -44,9 +45,6 @@ public class Book
         Year = year;
         Price = price;
     }
-
-    public static bool IsValidYear(int year)
-        => year >= MinYear && year <= MaxYear;
 
     public override string ToString()
         => $"№{Id} | {Title} | {Author} | {Genre.GetTitle()} | {Year} г. | {FormatPrice(Price)}";
