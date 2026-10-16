@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 using ISIP224_ZORIN.Enums;
 
@@ -32,7 +34,7 @@ public class Book
         if (price <= 0m)
             throw new ArgumentOutOfRangeException(nameof(price), price, "Цена книги должна быть больше нуля.");
 
-        if (year < MinYear || year > MaxYear)
+        if (!IsValidYear(year))
             throw new ArgumentOutOfRangeException(nameof(year), year, $"Год издания должен быть от {MinYear} до {MaxYear}.");
 
         Id = id;
@@ -42,6 +44,9 @@ public class Book
         Year = year;
         Price = price;
     }
+
+    public static bool IsValidYear(int year)
+        => year >= MinYear && year <= MaxYear;
 
     public override string ToString()
         => $"№{Id} | {Title} | {Author} | {Genre.GetTitle()} | {Year} г. | {FormatPrice(Price)}";

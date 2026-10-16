@@ -27,4 +27,21 @@ public static class GenreExtensions
 
     public static string GetNumberedTitle(this Genre genre)
         => $"{(int)genre}. {genre.GetTitle()}";
+
+    public static Genre FromText(string text)
+    {
+        foreach (Genre genre in All)
+        {
+            if (string.Equals(genre.GetTitle(), text, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(genre.ToString(), text, StringComparison.OrdinalIgnoreCase))
+            {
+                return genre;
+            }
+        }
+
+        if (int.TryParse(text, out int number) && Enum.IsDefined(typeof(Genre), number))
+            return (Genre)number;
+
+        throw new FormatException($"Жанр «{text}» не найден.");
+    }
 }

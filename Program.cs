@@ -51,6 +51,7 @@ internal class Program
             Console.WriteLine("5. Самая дорогая и самая дешёвая книга");
             Console.WriteLine("6. Книги по авторам");
             Console.WriteLine("7. Показать все книги");
+            Console.WriteLine("8. Вставить блок книг");
             Console.WriteLine("0. Выход");
 
             string choice = Input.ReadText("Выберите команду: ");
@@ -85,6 +86,10 @@ internal class Program
                     PrintBookTable(Library.Books);
                     break;
 
+                case "8":
+                    ImportBlock();
+                    break;
+
                 case "0":
                     return;
 
@@ -93,6 +98,35 @@ internal class Program
                     break;
             }
         }
+    }
+
+    private static void ImportBlock()
+    {
+        Console.WriteLine("\n--- ПАКЕТНЫЙ ИМПОРТ КНИГ ---");
+
+        List<string> lines = Input.ReadLines(
+            "  Формат строки: Название;Автор;Жанр;Год;Цена",
+            "!done");
+
+        if (lines.Count == 0)
+        {
+            Input.ShowError("Не введено ни одной строки.");
+            return;
+        }
+
+        BatchImportResult result = BatchImporter.Import(Library, lines);
+
+        Console.WriteLine($"\n  Добавлено книг: {result.Added}.");
+
+        if (result.Errors.Count > 0)
+        {
+            Console.WriteLine($"  Ошибок ввода: {result.Errors.Count}.");
+
+            foreach (string error in result.Errors)
+                Console.WriteLine($"    {error}");
+        }
+
+        Console.WriteLine($"  Всего книг в фонде: {Library.Count}, стоимость: {Input.FormatMoney(Library.TotalValue)} руб.");
     }
 
     private static void AddBook()
@@ -114,6 +148,56 @@ internal class Program
         catch (ArgumentException exception)
         {
             Input.ShowError($"Книга не добавлена: {exception.Message}");
+        }
+    }
+
+    private static void RemoveBook()
+    {
+        Console.WriteLine("\n--- УДАЛЕНИЕ КНИГИ ---");
+
+        int id = Input.ReadId();
+        Book? book = Library.FindById(id);
+
+        if (book is null)
+        {
+            Input.ShowError($"Книга с идентификатором {id} не найдена.");
+            return;
+        }
+
+        book.PrintInfo();
+        Console.WriteLine();
+
+        if (!Input.ReadYesNo("  Удалить эту книгу? (д/н): "))
+        {
+            Console.WriteLine("  Удаление отменено.");
+            return;
+        }
+
+        Library.Remove(id);
+        Console.WriteLine($"\n  Книга с идентификатором {id} удалена.");
+        Console.WriteLine($"  Осталось книг: {Library.Count}.");
+    }
+
+    private static Genre ReadGenre()
+    {
+        while (true)
+        {
+            Console.WriteLine("  Жанры:");
+            foreach (Genre genre in GenreExtensions.All)
+                Console.WriteLine($"    {genre.GetNumberedTitle()}");
+
+            string text = Input.ReadLine("  Выберите жанр (номер или название): ").Trim();
+
+            foreach (Genre genre in GenreExtensions.All)
+            {
+                if (string.Equals(genre.GetTitle(), text, StringComparison.OrdinalIgnoreCase))
+                    return genre;
+            }
+
+            if (int.TryParse(text, out int number) && Enum.IsDefined(typeof(Genre), number))
+                return (Genre)number;
+
+            Input.ShowError("Такого жанра нет. Выберите номер или название из списка.");
         }
     }
 
@@ -242,56 +326,6 @@ internal class Program
         }
 
         Console.WriteLine($"\n  Всего авторов: {groups.Count}, книг: {totalBooks}.");
-    }
-
-    private static void RemoveBook()
-    {
-        Console.WriteLine("\n--- УДАЛЕНИЕ КНИГИ ---");
-
-        int id = Input.ReadId();
-        Book? book = Library.FindById(id);
-
-        if (book is null)
-        {
-            Input.ShowError($"Книга с идентификатором {id} не найдена.");
-            return;
-        }
-
-        book.PrintInfo();
-        Console.WriteLine();
-
-        if (!Input.ReadYesNo("  Удалить эту книгу? (д/н): "))
-        {
-            Console.WriteLine("  Удаление отменено.");
-            return;
-        }
-
-        Library.Remove(id);
-        Console.WriteLine($"\n  Книга с идентификатором {id} удалена.");
-        Console.WriteLine($"  Осталось книг: {Library.Count}.");
-    }
-
-    private static Genre ReadGenre()
-    {
-        while (true)
-        {
-            Console.WriteLine("  Жанры:");
-            foreach (Genre genre in GenreExtensions.All)
-                Console.WriteLine($"    {genre.GetNumberedTitle()}");
-
-            string text = Input.ReadLine("  Выберите жанр (номер или название): ").Trim();
-
-            foreach (Genre genre in GenreExtensions.All)
-            {
-                if (string.Equals(genre.GetTitle(), text, StringComparison.OrdinalIgnoreCase))
-                    return genre;
-            }
-
-            if (int.TryParse(text, out int number) && Enum.IsDefined(typeof(Genre), number))
-                return (Genre)number;
-
-            Input.ShowError("Такого жанра нет. Выберите номер или название из списка.");
-        }
     }
 
     private static void PrintBookTable(IReadOnlyList<Book> books)
