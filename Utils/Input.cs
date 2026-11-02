@@ -1,7 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using ISIP224_ZORIN.Enums;
+using ISIP224_ZORIN.Models;
 
 namespace ISIP224_ZORIN.Utils;
 
@@ -12,10 +10,9 @@ public sealed class InputClosedException : Exception
     }
 }
 
+// Чтение данных с клавиатуры с проверкой каждого значения.
 public static class Input
 {
-    public const decimal MaxPrice = 1_000_000m;
-
     public static string ReadLine(string prompt)
     {
         Console.Write(prompt);
@@ -39,7 +36,7 @@ public static class Input
         }
     }
 
-    public static int ReadId(string prompt = "Идентификатор книги: ")
+    public static int ReadId(string prompt = "  Идентификатор: ")
         => ReadInt(prompt, 1, 1_000_000);
 
     public static int ReadInt(string prompt, int min, int max)
@@ -55,40 +52,21 @@ public static class Input
         }
     }
 
-    public static int ReadYear(string prompt)
-        => ReadInt(prompt, 1450, DateTime.Now.Year + 1);
+    public static int ReadAge(string prompt)
+        => ReadInt(prompt, Person.MinAge, Person.MaxAge);
 
-    public static decimal ReadPrice(string prompt)
+    public static string ReadEmail(string prompt)
     {
         while (true)
         {
-            string text = ReadLine(prompt).Trim();
+            string email = ReadText(prompt);
 
-            if (TryParsePrice(text, out decimal value))
-                return value;
+            if (Person.IsValidEmail(email))
+                return email;
 
-            ShowError($"Введите цену числом больше нуля (от 0,01 до {MaxPrice:0.##}).");
+            ShowError("Почта должна содержать «@», точку после него и без пробелов: name@example.com.");
         }
     }
-
-    public static int ReadPositiveInt(string prompt)
-        => ReadInt(prompt, 1, 1_000_000);
-
-    public static bool TryParseDecimal(string text, out decimal value)
-    {
-        string normalized = text.Replace(',', '.').Replace(" ", string.Empty);
-
-        return decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out value);
-    }
-
-    public static bool TryParseInt(string text, out int value)
-        => int.TryParse(text, out value);
-
-    public static bool TryParseYear(string text, out int year)
-        => int.TryParse(text, out year) && year >= 1450 && year <= DateTime.Now.Year + 1;
-
-    public static bool TryParsePrice(string text, out decimal price)
-        => TryParseDecimal(text, out price) && price > 0m && price <= MaxPrice;
 
     public static bool ReadYesNo(string prompt)
     {
@@ -115,25 +93,6 @@ public static class Input
     public static void ShowError(string message)
         => Console.WriteLine($"  [Ошибка] {message}");
 
-    public static string FormatMoney(decimal value)
-        => value.ToString("0.00", CultureInfo.InvariantCulture);
-
-    public static List<string> ReadLines(string prompt, string terminator)
-    {
-        Console.WriteLine(prompt);
-        Console.WriteLine($"Введите строки по одной. Для завершения ввода наберите с новой строки: {terminator}");
-
-        List<string> lines = new List<string>();
-
-        while (true)
-        {
-            string line = ReadLine("  ").TrimEnd();
-
-            if (line.Trim() == terminator)
-                return lines;
-
-            if (line.Trim().Length > 0)
-                lines.Add(line);
-        }
-    }
+    public static string FormatNumber(int value)
+        => value.ToString("N0", CultureInfo.InvariantCulture);
 }
