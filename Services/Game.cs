@@ -23,10 +23,40 @@ public class Game
         chest = new Chest(items);
     }
 
-    public void Run()
+    public void RunNewGame()
     {
-        StartNewGame();
+        player = CreatePlayer();
+        turn = 0;
+        SaveManager.DeleteSave();
 
+        Console.WriteLine($"\n  {player.Name} спускается в подземелье.");
+        player.PrintStatus();
+
+        Play();
+    }
+
+    public void RunFromSave()
+    {
+        (Player, int)? state = SaveManager.Load();
+
+        if (state is not { } saved)
+        {
+            Input.ShowError("Сохранение не найдено или повреждено. Начинается новая игра.");
+            RunNewGame();
+            return;
+        }
+
+        player = saved.Item1;
+        turn = saved.Item2;
+
+        Console.WriteLine($"\n  Прогресс загружен: ход {turn}.");
+        player.PrintStatus();
+
+        Play();
+    }
+
+    private void Play()
+    {
         while (player.IsAlive)
         {
             turn++;
@@ -43,6 +73,7 @@ public class Game
                 break;
 
             player.PrintStatus();
+            SaveManager.Save(player, turn);
 
             if (!Input.ReadYesNo("\n  Продолжить поход? (д/н): "))
                 break;
@@ -51,14 +82,10 @@ public class Game
         PrintGameOver();
     }
 
-    private void StartNewGame()
+    private Player CreatePlayer()
     {
         string name = Input.ReadText("Введите имя героя: ");
-        player = new Player(name);
-        turn = 0;
-
-        Console.WriteLine($"\n  {player.Name} спускается в подземелье.");
-        player.PrintStatus();
+        return new Player(name);
     }
 
     private void PrintTurnHeader()
@@ -107,7 +134,10 @@ public class Game
         if (player.IsAlive)
             Console.WriteLine($"  {player.Name} выходит из подземелья живым(ой).");
         else
+        {
             Console.WriteLine($"  Игра окончена. {player.Name} пал(а) в бою…");
+            SaveManager.DeleteSave();
+        }
 
         Console.WriteLine($"  Пройдено ходов: {turn}.");
         Console.WriteLine("==========================================================");
