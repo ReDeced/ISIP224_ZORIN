@@ -42,7 +42,7 @@ public abstract class Person
     // Каждый наследник дополняет карточку своей информацией.
     public virtual void PrintInfo()
     {
-        Console.WriteLine("  +------------------------------------------------------+");
+        Console.WriteLine("  +-------------------------------------------------------------------------+");
         WriteRow("Роль", Role);
         WriteRow("Идентификатор", Id.ToString());
         WriteRow("Имя", FullName);
@@ -54,7 +54,7 @@ public abstract class Person
         => Console.WriteLine($"  | {label,-18}| {value,-52}|");
 
     protected void PrintCardFooter()
-        => Console.WriteLine("  +------------------------------------------------------+");
+        => Console.WriteLine("  +-------------------------------------------------------------------------+");
 
     public static bool IsValidEmail(string email)
         => !string.IsNullOrWhiteSpace(email)

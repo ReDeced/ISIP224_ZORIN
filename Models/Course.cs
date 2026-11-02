@@ -65,14 +65,14 @@ public class Course
 
     public void PrintInfo()
     {
-        Console.WriteLine("  +------------------------------------------------------+");
+        Console.WriteLine("  +-------------------------------------------------------------------------+");
         WriteRow("Идентификатор", Id.ToString());
         WriteRow("Название", title);
         WriteRow("Описание", description.Length > 0 ? description : "—");
         WriteRow("Объём", $"{creditHours} ч.");
         WriteRow("Преподаватель", teacher is null ? "не назначен" : $"{teacher.FullName} ({teacher.Degree.GetTitle()})");
         WriteRow("Студентов", students.Count.ToString());
-        Console.WriteLine("  +------------------------------------------------------+");
+        Console.WriteLine("  +-------------------------------------------------------------------------+");
     }
 
     private void WriteRow(string label, string value)
