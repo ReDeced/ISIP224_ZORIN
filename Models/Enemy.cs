@@ -59,7 +59,7 @@ public abstract class Enemy
 
     public virtual void PrintInfo()
     {
-        Console.WriteLine("  +------------------------------------------------------+");
+        Console.WriteLine("  +-------------------------------------------------------------------------+");
         WriteRow("Противник", Name);
         WriteRow("Здоровье", $"{health}/{MaxHealth}");
         WriteRow("Атака", AttackPower.ToString());
@@ -74,7 +74,7 @@ public abstract class Enemy
         if (FreezeChance > 0)
             WriteRow("Особенность", $"заморозка ({FormatChance(FreezeChance)})");
 
-        Console.WriteLine("  +------------------------------------------------------+");
+        Console.WriteLine("  +-------------------------------------------------------------------------+");
     }
 
     protected void WriteRow(string label, string value)
