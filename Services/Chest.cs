@@ -30,23 +30,23 @@ public class Chest
                 break;
 
             case Weapon weapon:
-                OfferEquip(player, weapon, "оружие", player.Weapon);
+                OfferEquip(player, weapon, player.Weapon);
                 break;
 
             case Armor armor:
-                OfferEquip(player, armor, "доспех", player.Armor);
+                OfferEquip(player, armor, player.Armor);
                 break;
         }
     }
 
-    private void OfferEquip(Player player, Item newItem, string kind, Item? currentItem)
+    private void OfferEquip(Player player, Item newItem, Item? currentItem)
     {
         Console.WriteLine($"  В сундуке: {newItem.Name} ({newItem.Stats}).");
         Console.WriteLine(currentItem is null
-            ? $"  Сейчас у игрока {kind} не экипировано."
-            : $"  Текущее {kind}: {currentItem.Name} ({currentItem.Stats}).");
+            ? "  В этой ячейке экипировки пока пусто."
+            : $"  Текущий предмет: {currentItem.Name} ({currentItem.Stats}).");
 
-        if (Input.ReadYesNo($"  Взять новое {kind} вместо текущего? (д/н): "))
+        if (Input.ReadYesNo($"  Взять «{newItem.Name}» вместо текущего? (д/н): "))
         {
             Equip(player, newItem);
             Console.WriteLine($"  Экипировано: {newItem.Name} ({newItem.Stats}).");

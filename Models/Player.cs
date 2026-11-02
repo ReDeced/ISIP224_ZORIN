@@ -5,7 +5,7 @@ namespace ISIP224_ZORIN.Models;
 public class Player
 {
     public const int MaxHealth = 100;
-    public const int BaseAttackPower = 5;
+    public const int BaseAttackPower = 10;
     public const int BaseDefense = 0;
 
     private int health;
