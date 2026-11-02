@@ -1,4 +1,4 @@
-using ISIP224_ZORIN.Models;
+using System.Globalization;
 
 namespace ISIP224_ZORIN.Utils;
 
@@ -34,6 +34,9 @@ public static class Input
             ShowError("Значение не может быть пустым. Попробуйте ещё раз.");
         }
     }
+
+    public static int ReadId(string prompt = "  Идентификатор товара: ")
+        => ReadInt(prompt, 1, 1_000_000);
 
     public static int ReadInt(string prompt, int min, int max)
     {
@@ -72,4 +75,10 @@ public static class Input
 
     public static void ShowError(string message)
         => Console.WriteLine($"  [Ошибка] {message}");
+
+    public static string FormatMoney(decimal value)
+        => value.ToString("0.00", CultureInfo.InvariantCulture);
+
+    public static string FormatDate(DateTime value)
+        => value.ToString("dd.MM.yyyy HH:mm", CultureInfo.InvariantCulture);
 }
