@@ -114,6 +114,53 @@ public class OrderService
         return command.ExecuteScalar();
     }
 
+    // История заказов пользователя. newestFirst: сначала свежие заказы,
+    // иначе сначала старые. Дата хранится в ISO-формате и сортируется на стороне БД.
+    public List<Order> GetUserOrders(User user, bool newestFirst)
+    {
+        string direction = newestFirst ? "DESC" : "ASC";
+
+        return database.Query(
+            $"""
+            SELECT "Order".Id, "Order".UserId, "Order".PickupPointId, "Order".CreatedAt,
+                   PickupPoint.Address AS PickupPointAddress
+            FROM "Order"
+            JOIN PickupPoint ON PickupPoint.Id = "Order".PickupPointId
+            WHERE "Order".UserId = $userId
+            ORDER BY "Order".CreatedAt {direction}, "Order".Id {direction};
+            """,
+            MapOrder,
+            MarketplaceDatabase.P("$userId", user.Id));
+    }
+
+    // Позиции заказа с названиями товаров.
+    public List<OrderItem> GetOrderItems(Order order)
+        => database.Query(
+            """
+            SELECT OrderItem.Id, OrderItem.OrderId, OrderItem.ProductId, OrderItem.Quantity,
+                   OrderItem.UnitPrice, Product.Title AS ProductTitle
+            FROM OrderItem
+            JOIN Product ON Product.Id = OrderItem.ProductId
+            WHERE OrderItem.OrderId = $orderId
+            ORDER BY OrderItem.Id;
+            """,
+            reader => new OrderItem(
+                reader.GetInt32(reader.GetOrdinal("Id")),
+                reader.GetInt32(reader.GetOrdinal("OrderId")),
+                reader.GetInt32(reader.GetOrdinal("ProductId")),
+                reader.GetInt32(reader.GetOrdinal("Quantity")),
+                Convert.ToDecimal(reader.GetDouble(reader.GetOrdinal("UnitPrice"))),
+                reader.GetString(reader.GetOrdinal("ProductTitle"))),
+            MarketplaceDatabase.P("$orderId", order.Id));
+
+    private static Order MapOrder(SqliteDataReader reader)
+        => new(
+            reader.GetInt32(reader.GetOrdinal("Id")),
+            reader.GetInt32(reader.GetOrdinal("UserId")),
+            reader.GetInt32(reader.GetOrdinal("PickupPointId")),
+            UserService.ParseDate(reader.GetString(reader.GetOrdinal("CreatedAt"))),
+            reader.GetString(reader.GetOrdinal("PickupPointAddress")));
+
     private static PickupPoint MapPickupPoint(SqliteDataReader reader)
         => new(
             reader.GetInt32(reader.GetOrdinal("Id")),
