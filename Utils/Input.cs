@@ -1,4 +1,3 @@
-using System.Globalization;
 using ISIP224_ZORIN.Models;
 
 namespace ISIP224_ZORIN.Utils;
@@ -36,9 +35,6 @@ public static class Input
         }
     }
 
-    public static int ReadId(string prompt = "  Идентификатор: ")
-        => ReadInt(prompt, 1, 1_000_000);
-
     public static int ReadInt(string prompt, int min, int max)
     {
         while (true)
@@ -49,22 +45,6 @@ public static class Input
                 return value;
 
             ShowError($"Введите целое число от {min} до {max}.");
-        }
-    }
-
-    public static int ReadAge(string prompt)
-        => ReadInt(prompt, Person.MinAge, Person.MaxAge);
-
-    public static string ReadEmail(string prompt)
-    {
-        while (true)
-        {
-            string email = ReadText(prompt);
-
-            if (Person.IsValidEmail(email))
-                return email;
-
-            ShowError("Почта должна содержать «@», точку после него и без пробелов: name@example.com.");
         }
     }
 
@@ -92,7 +72,4 @@ public static class Input
 
     public static void ShowError(string message)
         => Console.WriteLine($"  [Ошибка] {message}");
-
-    public static string FormatNumber(int value)
-        => value.ToString("N0", CultureInfo.InvariantCulture);
 }
