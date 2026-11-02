@@ -1,3 +1,5 @@
+using ISIP224_ZORIN.Enums;
+
 namespace ISIP224_ZORIN.Models;
 
 public class Course
@@ -69,7 +71,7 @@ public class Course
         WriteRow("Описание", description.Length > 0 ? description : "—");
         WriteRow("Объём", $"{creditHours} ч.");
         WriteRow("Преподаватель", teacher is null ? "не назначен" : $"{teacher.FullName} ({teacher.Degree.GetTitle()})");
-        WriteRow("Записано студентов", students.Count.ToString());
+        WriteRow("Студентов", students.Count.ToString());
         Console.WriteLine("  +------------------------------------------------------+");
     }
 

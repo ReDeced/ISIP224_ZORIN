@@ -7,14 +7,13 @@ namespace ISIP224_ZORIN;
 
 internal class Program
 {
-    private static readonly LibraryRepository Library = new();
-    private static readonly ShoppingCart Cart = new();
+    private static readonly UniversityRepository University = new();
 
     static void Main(string[] args)
     {
         try
         {
-            Library.FillWithTestData();
+            University.FillWithTestData();
 
             PrintWelcome();
             RunMainMenu();
@@ -34,10 +33,9 @@ internal class Program
     private static void PrintWelcome()
     {
         Console.WriteLine("==========================================================");
-        Console.WriteLine("              БИБЛИОТЕКА");
+        Console.WriteLine("              СИСТЕМА УПРАВЛЕНИЯ УНИВЕРСИТЕТОМ");
         Console.WriteLine("==========================================================");
-        Console.WriteLine($"Книг в фонде: {Library.Count}");
-        Console.WriteLine($"Общая стоимость фонда: {Input.FormatMoney(Library.TotalValue)} руб.");
+        Console.WriteLine($"Студентов: {University.Students.Count}, преподавателей: {University.Teachers.Count}, курсов: {University.Courses.Count}");
     }
 
     private static void RunMainMenu()
@@ -45,18 +43,18 @@ internal class Program
         while (true)
         {
             Console.WriteLine("\n--- ГЛАВНОЕ МЕНЮ ---");
-            Console.WriteLine("1. Добавить книгу");
-            Console.WriteLine("2. Удалить книгу");
-            Console.WriteLine("3. Найти книги");
-            Console.WriteLine("4. Отсортировать книги");
-            Console.WriteLine("5. Самая дорогая и самая дешёвая книга");
-            Console.WriteLine("6. Книги по авторам");
-            Console.WriteLine("7. Показать все книги");
-            Console.WriteLine("8. Вставить блок книг");
-            Console.WriteLine("9. Добавить книгу в корзину");
-            Console.WriteLine("10. Показать корзину");
-            Console.WriteLine("11. Убрать книгу из корзины");
-            Console.WriteLine("12. Очистить корзину");
+            Console.WriteLine("1. Добавить студента");
+            Console.WriteLine("2. Информация о студенте");
+            Console.WriteLine("3. Добавить преподавателя");
+            Console.WriteLine("4. Информация о преподавателе");
+            Console.WriteLine("5. Создать курс");
+            Console.WriteLine("6. Информация о курсе");
+            Console.WriteLine("7. Записать студента на курс");
+            Console.WriteLine("8. Назначить преподавателя на курс");
+            Console.WriteLine("9. Список всех студентов");
+            Console.WriteLine("10. Список всех преподавателей");
+            Console.WriteLine("11. Список всех курсов");
+            Console.WriteLine("12. Все участники учебного процесса");
             Console.WriteLine("0. Выход");
 
             string choice = Input.ReadText("Выберите команду: ");
@@ -64,51 +62,51 @@ internal class Program
             switch (choice)
             {
                 case "1":
-                    AddBook();
+                    AddStudent();
                     break;
 
                 case "2":
-                    RemoveBook();
+                    ShowStudent();
                     break;
 
                 case "3":
-                    FindBooks();
+                    AddTeacher();
                     break;
 
                 case "4":
-                    SortBooks();
+                    ShowTeacher();
                     break;
 
                 case "5":
-                    ShowPriceExtremes();
+                    CreateCourse();
                     break;
 
                 case "6":
-                    ShowAuthors();
+                    ShowCourse();
                     break;
 
                 case "7":
-                    PrintBookTable(Library.Books);
+                    EnrollStudent();
                     break;
 
                 case "8":
-                    ImportBlock();
+                    AssignTeacher();
                     break;
 
                 case "9":
-                    AddToCart();
+                    PrintStudentTable(University.Students);
                     break;
 
                 case "10":
-                    ShowCart();
+                    PrintTeacherTable(University.Teachers);
                     break;
 
                 case "11":
-                    RemoveFromCart();
+                    PrintCourseTable(University.Courses);
                     break;
 
                 case "12":
-                    ClearCart();
+                    ShowAllPeople();
                     break;
 
                 case "0":
@@ -121,361 +119,318 @@ internal class Program
         }
     }
 
-    private static void AddBook()
+    private static void AddStudent()
     {
-        Console.WriteLine("\n--- ДОБАВЛЕНИЕ КНИГИ ---");
+        Console.WriteLine("\n--- ДОБАВЛЕНИЕ СТУДЕНТА ---");
 
-        string title = Input.ReadText("  Название: ");
-        string author = Input.ReadText("  Автор: ");
-        Genre genre = ReadGenre();
-        int year = Input.ReadYear("  Год издания: ");
-        decimal price = Input.ReadPrice("  Цена: ");
+        string fullName = Input.ReadText("  Имя: ");
+        int age = Input.ReadAge("  Возраст: ");
+        string email = Input.ReadEmail("  Почта: ");
+        int studentNumber = Input.ReadInt("  Номер студенческого билета (6 цифр): ",
+            Student.MinStudentNumber, Student.MaxStudentNumber);
+        int yearOfStudy = Input.ReadInt("  Год обучения (1–6): ",
+            Student.MinYearOfStudy, Student.MaxYearOfStudy);
 
         try
         {
-            Book book = Library.Add(title, author, genre, year, price);
-            Console.WriteLine($"\n  Книга добавлена. Идентификатор: {book.Id}");
-            book.PrintInfo();
+            Student student = University.AddStudent(fullName, age, email, studentNumber, yearOfStudy);
+            Console.WriteLine("\n  Студент добавлен:");
+            student.PrintInfo();
         }
         catch (ArgumentException exception)
         {
-            Input.ShowError($"Книга не добавлена: {exception.Message}");
+            Input.ShowError($"Студент не добавлен: {exception.Message}");
+        }
+        catch (InvalidOperationException exception)
+        {
+            Input.ShowError(exception.Message);
         }
     }
 
-    private static void ImportBlock()
+    private static void AddTeacher()
     {
-        Console.WriteLine("\n--- ПАКЕТНЫЙ ИМПОРТ КНИГ ---");
+        Console.WriteLine("\n--- ДОБАВЛЕНИЕ ПРЕПОДАВАТЕЛЯ ---");
 
-        List<string> lines = Input.ReadLines(
-            "  Формат строки: Название;Автор;Жанр;Год;Цена",
-            "!done");
-
-        if (lines.Count == 0)
-        {
-            Input.ShowError("Не введено ни одной строки.");
-            return;
-        }
-
-        BatchImportResult result = BatchImporter.Import(Library, lines);
-
-        Console.WriteLine($"\n  Добавлено книг: {result.Added}.");
-
-        if (result.Errors.Count > 0)
-        {
-            Console.WriteLine($"  Ошибок ввода: {result.Errors.Count}.");
-
-            foreach (string error in result.Errors)
-                Console.WriteLine($"    {error}");
-        }
-
-        Console.WriteLine($"  Всего книг в фонде: {Library.Count}, стоимость: {Input.FormatMoney(Library.TotalValue)} руб.");
-    }
-
-    private static void AddToCart()
-    {
-        Console.WriteLine("\n--- ДОБАВЛЕНИЕ КНИГИ В КОРЗИНУ ---");
-
-        int id = Input.ReadId();
-        Book? book = Library.FindById(id);
-
-        if (book is null)
-        {
-            Input.ShowError($"Книга с идентификатором {id} не найдена.");
-            return;
-        }
-
-        book.PrintInfo();
-        Console.WriteLine();
-
-        int quantity = Input.ReadPositiveInt("  Сколько экземпляров взять: ");
+        string fullName = Input.ReadText("  Имя: ");
+        int age = Input.ReadAge("  Возраст: ");
+        string email = Input.ReadEmail("  Почта: ");
+        AcademicDegree degree = ReadDegree();
+        string department = Input.ReadText("  Кафедра: ");
+        int experienceYears = Input.ReadInt($"  Стаж (0–{Teacher.MaxExperienceYears}): ", 0, Teacher.MaxExperienceYears);
 
         try
         {
-            CartItem item = Cart.Add(book, quantity);
-            Console.WriteLine($"\n  В корзине: {item.Book.Title} — {item.Quantity} шт.");
-            Console.WriteLine($"  Стоимость корзины: {Input.FormatMoney(Cart.TotalPrice)} руб.");
+            Teacher teacher = University.AddTeacher(fullName, age, email, degree, department, experienceYears);
+            Console.WriteLine("\n  Преподаватель добавлен:");
+            teacher.PrintInfo();
         }
-        catch (ArgumentOutOfRangeException exception)
+        catch (ArgumentException exception)
         {
-            Input.ShowError($"Книга не добавлена в корзину: {exception.Message}");
+            Input.ShowError($"Преподаватель не добавлен: {exception.Message}");
         }
     }
 
-    private static void ShowCart()
+    private static void CreateCourse()
     {
-        Console.WriteLine("\n--- КОРЗИНА ---");
+        Console.WriteLine("\n--- СОЗДАНИЕ КУРСА ---");
 
-        List<CartItem> items = Cart.GetItems();
+        string title = Input.ReadText("  Название курса: ");
+        string description = Input.ReadText("  Описание: ");
+        int creditHours = Input.ReadInt($"  Объём ({Course.MinCreditHours}–{Course.MaxCreditHours} ч.): ",
+            Course.MinCreditHours, Course.MaxCreditHours);
 
-        if (items.Count == 0)
+        try
         {
-            Console.WriteLine("  Корзина пуста.");
+            Course course = University.AddCourse(title, description, creditHours);
+            Console.WriteLine("\n  Курс создан:");
+            course.PrintInfo();
+        }
+        catch (ArgumentException exception)
+        {
+            Input.ShowError($"Курс не создан: {exception.Message}");
+        }
+    }
+
+    private static void ShowStudent()
+    {
+        Console.WriteLine("\n--- ИНФОРМАЦИЯ О СТУДЕНТЕ ---");
+
+        Student? student = University.FindStudent(Input.ReadId("  Идентификатор студента: "));
+
+        if (student is null)
+        {
+            Input.ShowError("Студент с таким идентификатором не найден.");
             return;
         }
 
-        Console.WriteLine($"  {"№",-5}{"Название",-30}{"Цена, руб.",-13}{"Кол-во",-9}{"Сумма, руб.",-14}");
-        Console.WriteLine($"  {"",-5}{"",-30}{"",-13}{"",-9}{"",-14}");
+        student.PrintInfo();
 
-        int position = 1;
+        List<Course> courses = University.GetStudentCourses(student.Id);
 
-        foreach (CartItem item in items)
-        {
-            Console.WriteLine($"  {position,-5}{Cut(item.Book.Title, 29),-30}{Input.FormatMoney(item.Book.Price),-13}" +
-                              $"{item.Quantity,-9}{Input.FormatMoney(item.Total),-14}");
-            position++;
-        }
+        Console.WriteLine(courses.Count > 0
+            ? $"\n  Студент записан на курсы ({courses.Count}):"
+            : "\n  Студент не записан ни на один курс.");
 
-        Console.WriteLine($"  {"",-5}{"",-30}{"",-13}{"",-9}{"",-14}");
-        Console.WriteLine($"  {"ИТОГО",-49}{Cart.TotalQuantity,-9}{Input.FormatMoney(Cart.TotalPrice),-14}");
-
-        Console.WriteLine($"\n  Позиций в корзине: {Cart.Count}, всего экземпляров: {Cart.TotalQuantity}.");
-        Console.WriteLine($"  Итоговая стоимость корзины: {Input.FormatMoney(Cart.TotalPrice)} руб.");
+        foreach (Course course in courses)
+            Console.WriteLine($"    №{course.Id} — {course.Title} ({course.CreditHours} ч., {(course.Teacher?.FullName ?? "преподаватель не назначен")})");
     }
 
-    private static void RemoveFromCart()
+    private static void ShowTeacher()
     {
-        Console.WriteLine("\n--- УДАЛЕНИЕ КНИГИ ИЗ КОРЗИНЫ ---");
+        Console.WriteLine("\n--- ИНФОРМАЦИЯ О ПРЕПОДАВАТЕЛЕ ---");
 
-        if (Cart.IsEmpty)
+        Teacher? teacher = University.FindTeacher(Input.ReadId("  Идентификатор преподавателя: "));
+
+        if (teacher is null)
         {
-            Input.ShowError("Корзина пуста.");
+            Input.ShowError("Преподаватель с таким идентификатором не найден.");
             return;
         }
 
-        List<CartItem> items = Cart.GetItems();
+        teacher.PrintInfo();
 
-        Console.WriteLine($"  {"№",-5}{"Название",-32}{"Кол-во",-9}");
-        int position = 1;
+        List<Course> courses = University.GetTeacherCourses(teacher.Id);
 
-        foreach (CartItem item in items)
-        {
-            Console.WriteLine($"  {position,-5}{Cut(item.Book.Title, 31),-32}{item.Quantity,-9}");
-            position++;
-        }
+        Console.WriteLine(courses.Count > 0
+            ? $"\n  Преподаватель ведёт курсы ({courses.Count}):"
+            : "\n  Преподаватель не ведёт ни одного курса.");
 
-        int index = Input.ReadInt("Номер позиции в корзине: ", 1, items.Count);
-        CartItem chosen = items[index - 1];
-
-        if (!Cart.Decrease(chosen.Book.Id))
-            Input.ShowError("Не удалось изменить корзину.");
-
-        Console.WriteLine($"\n  Позиция обновлена. Стоимость корзины: {Input.FormatMoney(Cart.TotalPrice)} руб.");
+        foreach (Course course in courses)
+            Console.WriteLine($"    №{course.Id} — {course.Title} ({course.CreditHours} ч., студентов: {course.Students.Count})");
     }
 
-    private static void ClearCart()
+    private static void ShowCourse()
     {
-        Console.WriteLine("\n--- ОЧИСТКА КОРЗИНЫ ---");
+        Console.WriteLine("\n--- ИНФОРМАЦИЯ О КУРСЕ ---");
 
-        if (Cart.IsEmpty)
+        Course? course = University.FindCourse(Input.ReadId("  Идентификатор курса: "));
+
+        if (course is null)
         {
-            Input.ShowError("Корзина уже пуста.");
+            Input.ShowError("Курс с таким идентификатором не найден.");
             return;
         }
 
-        decimal total = Cart.TotalPrice;
-        Cart.Clear();
+        course.PrintInfo();
 
-        Console.WriteLine($"  Корзина очищена. Утраченная сумма: {Input.FormatMoney(total)} руб.");
-    }
-
-    private static void FindBooks()
-    {
-        Console.WriteLine("\n--- ПОИСК КНИГ ---");
-        Console.WriteLine("1. По названию");
-        Console.WriteLine("2. По автору");
-        Console.WriteLine("3. По жанру");
-
-        string choice = Input.ReadText("Выберите способ поиска: ");
-
-        switch (choice)
+        if (course.Students.Count == 0)
         {
-            case "1":
-                string title = Input.ReadText("  Название книги (часть названия): ");
-                PrintFound(Library.FindByTitle(title), $"по названию «{title}»");
-                break;
-
-            case "2":
-                string author = Input.ReadText("  Автор (часть имени): ");
-                PrintFound(Library.FindByAuthor(author), $"по автору «{author}»");
-                break;
-
-            case "3":
-                Genre genre = ReadGenre();
-                PrintFound(Library.FindByGenre(genre), $"по жанру «{genre.GetTitle()}»");
-                break;
-
-            default:
-                Input.ShowError("Такой способ поиска не найден. Введите номер из списка.");
-                break;
-        }
-    }
-
-    private static void PrintFound(List<Book> books, string description)
-    {
-        if (books.Count == 0)
-        {
-            Console.WriteLine($"\n  Книги {description} не найдены.");
+            Console.WriteLine("\n  На курс пока никто не записан.");
             return;
         }
 
-        Console.WriteLine($"\n  Найдено книг {description}: {books.Count}");
-
-        foreach (Book book in books)
-        {
-            book.PrintInfo();
-            Console.WriteLine();
-        }
+        Console.WriteLine($"\n  Студенты курса ({course.Students.Count}):");
+        PrintStudentTable(course.Students, withHeader: false);
     }
 
-    private static void SortBooks()
+    private static void EnrollStudent()
     {
-        Console.WriteLine("\n--- СОРТИРОВКА КНИГ ---");
-        Console.WriteLine("1. По названию");
-        Console.WriteLine("2. По году издания");
+        Console.WriteLine("\n--- ЗАПИСЬ СТУДЕНТА НА КУРС ---");
 
-        string choice = Input.ReadText("Выберите поле сортировки: ");
-
-        switch (choice)
+        if (University.Students.Count == 0 || University.Courses.Count == 0)
         {
-            case "1":
-                PrintBookTable(Library.SortByTitle());
-                break;
-
-            case "2":
-                PrintBookTable(Library.SortByYear());
-                break;
-
-            default:
-                Input.ShowError("Такой вариант сортировки не найден. Введите номер из списка.");
-                break;
-        }
-    }
-
-    private static void ShowPriceExtremes()
-    {
-        Console.WriteLine("\n--- САМАЯ ДОРОГАЯ И САМАЯ ДЁШЕВАЯ КНИГА ---");
-
-        Book? mostExpensive = Library.GetMostExpensive();
-        Book? cheapest = Library.GetCheapest();
-
-        if (mostExpensive is null || cheapest is null)
-        {
-            Console.WriteLine("  В фонде пока нет книг.");
+            Input.ShowError("Нужен хотя бы один студент и один курс.");
             return;
         }
 
-        Console.WriteLine("\n  Самая дорогая:");
-        mostExpensive.PrintInfo();
-
-        Console.WriteLine("\n  Самая дешёвая:");
-        cheapest.PrintInfo();
-
-        decimal difference = mostExpensive.Price - cheapest.Price;
-        Console.WriteLine($"\n  Разница в цене: {Input.FormatMoney(difference)} руб.");
-    }
-
-    private static void ShowAuthors()
-    {
-        Console.WriteLine("\n--- КНИГИ ПО АВТОРАМ ---");
-
-        List<IGrouping<string, Book>> groups = Library.GroupByAuthor().ToList();
-
-        if (groups.Count == 0)
-        {
-            Console.WriteLine("  В фонде пока нет книг.");
-            return;
-        }
-
-        Console.WriteLine($"  Авторов в фонде: {groups.Count}");
-        Console.WriteLine($"  {"Автор",-28}{"Книг",-8}{"Сумма, руб.",-14}Названия");
-
-        int totalBooks = 0;
-
-        foreach (IGrouping<string, Book> group in groups)
-        {
-            List<Book> books = group.ToList();
-            totalBooks += books.Count;
-
-            decimal sum = books.Sum(book => book.Price);
-            string titles = string.Join(", ", books.Select(book => Cut(book.Title, 18)));
-
-            Console.WriteLine($"  {Cut(group.Key, 27),-28}{books.Count,-8}{Input.FormatMoney(sum),-14}{titles}");
-        }
-
-        Console.WriteLine($"\n  Всего авторов: {groups.Count}, книг: {totalBooks}.");
-    }
-
-    private static void RemoveBook()
-    {
-        Console.WriteLine("\n--- УДАЛЕНИЕ КНИГИ ---");
-
-        int id = Input.ReadId();
-        Book? book = Library.FindById(id);
-
-        if (book is null)
-        {
-            Input.ShowError($"Книга с идентификатором {id} не найдена.");
-            return;
-        }
-
-        book.PrintInfo();
+        PrintStudentTable(University.Students);
         Console.WriteLine();
+        PrintCourseTable(University.Courses);
 
-        if (!Input.ReadYesNo("  Удалить эту книгу? (д/н): "))
+        int studentId = Input.ReadId("  Идентификатор студента: ");
+        int courseId = Input.ReadId("  Идентификатор курса: ");
+
+        try
         {
-            Console.WriteLine("  Удаление отменено.");
+            University.EnrollStudent(courseId, studentId);
+            Student student = University.FindStudent(studentId)!;
+            Course course = University.FindCourse(courseId)!;
+            Console.WriteLine($"\n  {student.FullName} записан(а) на курс «{course.Title}».");
+            Console.WriteLine($"  Всего на курсе студентов: {course.Students.Count}.");
+        }
+        catch (InvalidOperationException exception)
+        {
+            Input.ShowError(exception.Message);
+        }
+    }
+
+    private static void AssignTeacher()
+    {
+        Console.WriteLine("\n--- НАЗНАЧЕНИЕ ПРЕПОДАВАТЕЛЯ НА КУРС ---");
+
+        if (University.Teachers.Count == 0 || University.Courses.Count == 0)
+        {
+            Input.ShowError("Нужен хотя бы один преподаватель и один курс.");
             return;
         }
 
-        Library.Remove(id);
-        Console.WriteLine($"\n  Книга с идентификатором {id} удалена.");
-        Console.WriteLine($"  Осталось книг: {Library.Count}.");
+        PrintTeacherTable(University.Teachers);
+        Console.WriteLine();
+        PrintCourseTable(University.Courses);
+
+        int teacherId = Input.ReadId("  Идентификатор преподавателя: ");
+        int courseId = Input.ReadId("  Идентификатор курса: ");
+
+        try
+        {
+            University.AssignTeacher(courseId, teacherId);
+            Teacher teacher = University.FindTeacher(teacherId)!;
+            Course course = University.FindCourse(courseId)!;
+            Console.WriteLine($"\n  {teacher.FullName} теперь ведёт курс «{course.Title}».");
+        }
+        catch (InvalidOperationException exception)
+        {
+            Input.ShowError(exception.Message);
+        }
     }
 
-    private static Genre ReadGenre()
+    // Полиморфизм: список выводится через базовый класс Person,
+    // виртуальное свойство Role возвращает роль конкретного наследника.
+    private static void ShowAllPeople()
+    {
+        Console.WriteLine("\n--- ВСЕ УЧАСТНИКИ УЧЕБНОГО ПРОЦЕССА ---");
+
+        List<Person> people = University.GetAllPeople();
+
+        if (people.Count == 0)
+        {
+            Console.WriteLine("  В университете пока никого нет.");
+            return;
+        }
+
+        Console.WriteLine($"  {"ID",-5}{"Роль",-16}{"Имя",-30}{"Возраст",-9}Почта");
+
+        foreach (Person person in people)
+            Console.WriteLine($"  {person.Id,-5}{person.Role,-16}{Cut(person.FullName, 29),-30}{person.Age,-9}{person.Email}");
+
+        int studentsCount = people.Count(person => person is Student);
+        int teachersCount = people.Count(person => person is Teacher);
+        Console.WriteLine($"\n  Всего участников: {people.Count}, из них студентов: {studentsCount}, преподавателей: {teachersCount}.");
+    }
+
+    private static void PrintStudentTable(IReadOnlyList<Student> students, bool withHeader = true)
+    {
+        if (withHeader)
+        {
+            Console.WriteLine("\n--- СПИСОК СТУДЕНТОВ ---");
+
+            if (students.Count == 0)
+            {
+                Console.WriteLine("  Студентов в университете пока нет.");
+                return;
+            }
+        }
+        else if (students.Count == 0)
+        {
+            Console.WriteLine("  Студентов нет.");
+            return;
+        }
+
+        Console.WriteLine($"  {"ID",-5}{"Имя",-26}{"Возраст",-9}{"Биллет",-9}{"Курс",-7}Почта");
+
+        foreach (Student student in students)
+            Console.WriteLine($"  {student.Id,-5}{Cut(student.FullName, 25),-26}{student.Age,-9}{student.StudentNumber,-9}{student.YearOfStudy,-7}{student.Email}");
+
+        Console.WriteLine($"  Всего студентов: {students.Count}.");
+    }
+
+    private static void PrintTeacherTable(IReadOnlyList<Teacher> teachers)
+    {
+        Console.WriteLine("\n--- СПИСОК ПРЕПОДАВАТЕЛЕЙ ---");
+
+        if (teachers.Count == 0)
+        {
+            Console.WriteLine("  Преподавателей в университете пока нет.");
+            return;
+        }
+
+        Console.WriteLine($"  {"ID",-5}{"Имя",-26}{"Возраст",-9}{"Степень",-13}{"Стаж",-7}Кафедра");
+
+        foreach (Teacher teacher in teachers)
+            Console.WriteLine($"  {teacher.Id,-5}{Cut(teacher.FullName, 25),-26}{teacher.Age,-9}{teacher.Degree.GetTitle(),-13}{teacher.ExperienceYears,-7}{teacher.Department}");
+
+        Console.WriteLine($"  Всего преподавателей: {teachers.Count}.");
+    }
+
+    private static void PrintCourseTable(IReadOnlyList<Course> courses)
+    {
+        Console.WriteLine("\n--- СПИСОК КУРСОВ ---");
+
+        if (courses.Count == 0)
+        {
+            Console.WriteLine("  Курсов в университете пока нет.");
+            return;
+        }
+
+        Console.WriteLine($"  {"ID",-5}{"Название",-32}{"Часы",-7}{"Студентов",-11}Преподаватель");
+
+        foreach (Course course in courses)
+            Console.WriteLine($"  {course.Id,-5}{Cut(course.Title, 31),-32}{course.CreditHours,-7}{course.Students.Count,-11}{course.Teacher?.FullName ?? "не назначен"}");
+
+        Console.WriteLine($"  Всего курсов: {courses.Count}.");
+    }
+
+    private static AcademicDegree ReadDegree()
     {
         while (true)
         {
-            Console.WriteLine("  Жанры:");
-            foreach (Genre genre in GenreExtensions.All)
-                Console.WriteLine($"    {genre.GetNumberedTitle()}");
+            Console.WriteLine("  Учёные степени:");
+            foreach (AcademicDegree degree in AcademicDegreeExtensions.All)
+                Console.WriteLine($"    {degree.GetNumberedTitle()}");
 
-            string text = Input.ReadLine("  Выберите жанр (номер или название): ").Trim();
+            string text = Input.ReadLine("  Выберите степень (номер или название): ").Trim();
 
-            foreach (Genre genre in GenreExtensions.All)
+            foreach (AcademicDegree degree in AcademicDegreeExtensions.All)
             {
-                if (string.Equals(genre.GetTitle(), text, StringComparison.OrdinalIgnoreCase))
-                    return genre;
+                if (string.Equals(degree.GetTitle(), text, StringComparison.OrdinalIgnoreCase))
+                    return degree;
             }
 
-            if (int.TryParse(text, out int number) && Enum.IsDefined(typeof(Genre), number))
-                return (Genre)number;
+            if (int.TryParse(text, out int number) && Enum.IsDefined(typeof(AcademicDegree), number))
+                return (AcademicDegree)number;
 
-            Input.ShowError("Такого жанра нет. Выберите номер или название из списка.");
+            Input.ShowError("Такой степени нет. Выберите номер или название из списка.");
         }
-    }
-
-    private static void PrintBookTable(IReadOnlyList<Book> books)
-    {
-        Console.WriteLine("\n--- СПИСОК КНИГ ---");
-
-        if (books.Count == 0)
-        {
-            Console.WriteLine("  Книг в фонде пока нет.");
-            return;
-        }
-
-        Console.WriteLine($"  {"ID",-5}{"Название",-28}{"Автор",-22}{"Жанр",-20}{"Год",-7}{"Цена, руб.",-11}");
-
-        foreach (Book book in books)
-        {
-            Console.WriteLine($"  {book.Id,-5}{Cut(book.Title, 27),-28}{Cut(book.Author, 21),-22}{Cut(book.Genre.GetTitle(), 19),-20}" +
-                              $"{book.Year,-7}{Input.FormatMoney(book.Price),-11}");
-        }
-
-        decimal total = books.Sum(book => book.Price);
-        Console.WriteLine($"\n  Всего книг: {books.Count}, стоимость: {Input.FormatMoney(total)} руб.");
     }
 
     private static string Cut(string text, int maxLength)
