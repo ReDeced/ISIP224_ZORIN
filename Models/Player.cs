@@ -1,3 +1,5 @@
+using ISIP224_ZORIN.Enums;
+
 namespace ISIP224_ZORIN.Models;
 
 // Состояние героя: здоровье и две ячейки экипировки.
@@ -68,7 +70,7 @@ public class Player
     public void PrintStatus()
     {
         Console.WriteLine($"  {Name}: HP {health}/{MaxHealth} | атака {AttackPower} | защита {DefensePower}");
-        Console.WriteLine($"  Оружие: {(Weapon is null ? "нет" : $"{Weapon.Name} ({Weapon.Stats})")}");
-        Console.WriteLine($"  Доспех: {(Armor is null ? "нет" : $"{Armor.Name} ({Armor.Stats})")}");
+        Console.WriteLine($"  Оружие: {(Weapon is null ? "нет" : $"{Weapon.Name} [{Weapon.Rarity.GetTitle()}] ({Weapon.Stats})")}");
+        Console.WriteLine($"  Доспех: {(Armor is null ? "нет" : $"{Armor.Name} [{Armor.Rarity.GetTitle()}] ({Armor.Stats})")}");
     }
 }

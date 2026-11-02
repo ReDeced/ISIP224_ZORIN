@@ -1,3 +1,4 @@
+using ISIP224_ZORIN.Enums;
 using ISIP224_ZORIN.Models;
 using ISIP224_ZORIN.Utils;
 
@@ -24,7 +25,7 @@ public class Chest
         switch (item)
         {
             case HealingPotion potion:
-                Console.WriteLine($"  В сундуке: {potion.Name} ({potion.Stats}).");
+                Console.WriteLine($"  В сундуке: {potion.Name} [{potion.Rarity.GetTitle()}] ({potion.Stats}).");
                 player.HealFully();
                 Console.WriteLine($"  Зелье выпито: здоровье восстановлено до {Player.MaxHealth} HP.");
                 break;
@@ -41,15 +42,15 @@ public class Chest
 
     private void OfferEquip(Player player, Item newItem, Item? currentItem)
     {
-        Console.WriteLine($"  В сундуке: {newItem.Name} ({newItem.Stats}).");
+        Console.WriteLine($"  В сундуке: {newItem.Name} [{newItem.Rarity.GetTitle()}] ({newItem.Stats}).");
         Console.WriteLine(currentItem is null
             ? "  В этой ячейке экипировки пока пусто."
-            : $"  Текущий предмет: {currentItem.Name} ({currentItem.Stats}).");
+            : $"  Текущий предмет: {currentItem.Name} [{currentItem.Rarity.GetTitle()}] ({currentItem.Stats}).");
 
         if (Input.ReadYesNo($"  Взять «{newItem.Name}» вместо текущего? (д/н): "))
         {
             Equip(player, newItem);
-            Console.WriteLine($"  Экипировано: {newItem.Name} ({newItem.Stats}).");
+            Console.WriteLine($"  Экипировано: {newItem.Name} [{newItem.Rarity.GetTitle()}] ({newItem.Stats}).");
         }
         else
         {

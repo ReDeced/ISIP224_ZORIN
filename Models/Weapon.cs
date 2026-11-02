@@ -1,12 +1,14 @@
+using ISIP224_ZORIN.Enums;
+
 namespace ISIP224_ZORIN.Models;
 
 public class Weapon : Item
 {
     private const int MinBonus = 1;
-    private const int MaxBonus = 20;
+    private const int MaxBonus = 30;
 
-    public Weapon(string name, int attackBonus)
-        : base(name)
+    public Weapon(string name, Rarity rarity, int attackBonus)
+        : base(name, rarity)
     {
         if (attackBonus < MinBonus || attackBonus > MaxBonus)
             throw new ArgumentOutOfRangeException(nameof(attackBonus), attackBonus,
